@@ -7,6 +7,7 @@ class CalorieTracker {
         this._displayCalorieLimit();
         this._displayCaloriesTotal();
         this._displayCaloriesConsumed();
+        this._displayCaloriesBurned()
         this._displayCaloriesRemaining()
         this._displayCaloriesProgress()
     }
@@ -15,6 +16,7 @@ class CalorieTracker {
         this._totalCalories += meal.calories;
         this._displayNewMeal(meal)
         this._render()
+        // console.log(this._meals)
     }
     addWorkout(workout) {
         this._workouts.push(workout);
@@ -65,7 +67,7 @@ class CalorieTracker {
     }
     // Display Meals 
     _displayNewMeal(meal) {
-        console.log(meal)
+        // console.log(meal)
         let mealItem = document.createElement("div");
         mealItem.classList.add("card", "my-2");
         mealItem.setAttribute("data-id" , meal.id)
@@ -88,7 +90,7 @@ class CalorieTracker {
     }
     // Display Workouts
     _displayNewWorkout(workout) {
-        console.log(workout)
+        // console.log(workout)
         let workoutItem = document.createElement("div");
         workoutItem.classList.add("card", "my-2");
         workoutItem.setAttribute("data-id" , workout.id)
@@ -108,6 +110,32 @@ class CalorieTracker {
               </div>
               `
         document.querySelector("#workout-items").appendChild(workoutItem)
+    }
+    removeMeal(id) {
+        this._meals.forEach(meal => {
+            if (meal.id !== id) {
+                return
+            } else {
+                this._totalCalories -= meal.calories;
+                this._render()
+            }
+        })
+    }
+    removeWorkout(id) {
+        this._workouts.forEach(workout => {
+            if (workout.id !== id) {
+                return;
+            } else {
+                this._totalCalories += workout.calories;
+                this._render()
+            }
+        })
+    }
+    resetApp() {
+        this._totalCalories = 0
+        this._meals = []
+        this._workouts = []
+        this._render()
     }
     _render() {
         this._displayCaloriesTotal()
@@ -134,8 +162,13 @@ class Workout {
 class App {
     constructor() {
         this._tracker = new CalorieTracker();
-        document.querySelector("#meal-form").addEventListener("submit" , this._addMealOrWorkout.bind(this , "meal"))
-        document.querySelector("#workout-form").addEventListener("submit" , this._addMealOrWorkout.bind(this , "workout"))
+        document.querySelector("#meal-form").addEventListener("submit" , this._addMealOrWorkout.bind(this , "meal"));
+        document.querySelector("#workout-form").addEventListener("submit" , this._addMealOrWorkout.bind(this , "workout"));
+        document.querySelector("#meal-items").addEventListener("click" , this._removeItem.bind(this , "meal"))
+        document.querySelector("#workout-items").addEventListener("click" , this._removeItem.bind(this , "workout"))
+        document.querySelector("#filter-meals").addEventListener("keyup" , this._filterItems.bind(this , "meal"))
+        document.querySelector("#filter-workouts").addEventListener("keyup" , this._filterItems.bind(this , "workout"))
+        document.querySelector("#reset").addEventListener("click" , this._reset.bind(this))
     }
     _addMealOrWorkout(type , event) {
         event.preventDefault();
@@ -143,6 +176,7 @@ class App {
         let calories = document.querySelector(`#${type}-calories`);
         if(!name.value || !calories.value) {
             alert(`Please enter name and calories of the ${type}`)
+            return;
         }
         if(type === "meal") {
             let newMeal = new Meal(name.value , +calories.value);
@@ -157,5 +191,39 @@ class App {
             toggle : true
         })
     }
+    _removeItem(type , e) {
+        if(e.target.classList.contains("delete") || e.target.classList.contains("fa-xmark")) {
+            // console.log(type);
+            if(confirm("Are You Sure You Wanna Delete This Item?")) {
+                e.target.closest(".card").remove()
+                let elementID = e.target.closest(".card").dataset.id;
+                type === "meal" ? this._tracker.removeMeal(elementID) : this._tracker.removeWorkout(elementID)
+            }
+
+        }
+    }
+    _filterItems(type, e) {
+        let text = e.target.value.toLowerCase();
+        // console.log(text)
+        let cards = document.querySelectorAll(`#${type}-items > .card`);
+        // console.log(cards)
+        cards.forEach(card => {
+            let name = card.firstElementChild.firstElementChild.textContent.toLowerCase();
+            console.log(name)
+            if(name.indexOf(text) !== -1) {
+                card.style.display = "block";
+            } else {
+                card.style.display = "none";
+            }
+        })
+    }
+    _reset() {
+        this._tracker.resetApp();
+        document.querySelector("#meal-items").innerHTML = '';
+        document.querySelector("#workout-items").innerHTML = '';
+        document.querySelector("#filter-meals").value = '';
+        document.querySelector("#filter-workouts").value = '';
+    }
+
 }
 let app = new App()
